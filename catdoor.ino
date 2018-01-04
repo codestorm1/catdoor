@@ -9,6 +9,12 @@
 #include <TimeLib.h>
 #include <TimeAlarms.h>
 
+// Date and time functions using a DS1307 RTC connected via I2C and Wire lib
+#include <Wire.h>
+#include "RTClib.h"
+
+RTC_DS1307 rtc;
+
 int in1Pin = 13;
 int in2Pin = 12;
 int in3Pin = 11;
@@ -104,17 +110,32 @@ void setup()
   // until the terminal window is opened
   while (!Serial);
   
-  Serial.begin(9600);
   Serial.println("starting up");
-  motor.setSpeed(60);
 
-  setTime(0,13,0,1,3,170); // set time to Saturday 8:29:00am Jan 1 2011
+  Serial.begin(57600);
+  if (!rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+    while (1);
+  }
+// rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+
+  if (!rtc.isrunning()) {
+    Serial.println("RTC is NOT running!");
+    // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    // This line sets the RTC with an explicit date & time, for example to set
+    // January 21, 2014 at 3am you would call:
+    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
+  }
+  DateTime now = rtc.now();
+  setTime(now.unixtime()); 
+  motor.setSpeed(60);
   digitalClockDisplay();
   
   Alarm.alarmRepeat(7, 0, 0, MorningOpen);  // 7am every day
   Alarm.alarmRepeat(20, 0, 0, EveningClose );  // 8pm every night
-//  Alarm.alarmRepeat(0, 0, 20, MorningOpen);  // 7am every day
-//  Alarm.alarmRepeat(0, 1, 0, EveningClose );  // 8pm every night
+//  Alarm.alarmRepeat(0, 0, 20, MorningOpen);
+//  Alarm.alarmRepeat(0, 1, 0, EveningClose );
 }
 
 void loop()
@@ -157,6 +178,6 @@ void loop()
     Alarm.delay(500); // debounce
     return;
   }
-  Alarm.delay(10); // debounce
+  Alarm.delay(100); // debounce
 }
 
