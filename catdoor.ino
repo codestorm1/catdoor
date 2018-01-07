@@ -67,18 +67,10 @@ void moveDoor() {
     Serial.println("Move door open");
     motor.step(stepsPerLoop);
     doorPosition += stepsPerLoop * -1;
-//    if (doorPosition <= openDoorPosition) {
-//      doorInMotion = false;
-//      digitalWrite(ledPin, LOW);
-//    }
   } else if (!doorDirectionOpen && doorPosition < closedDoorPosition) {
     Serial.println("Move door closed");
     motor.step(stepsPerLoop * -1);
     doorPosition += stepsPerLoop;
-//    if (doorPosition >= closedDoorPosition) {
-//      doorInMotion = false;
-//      digitalWrite(ledPin, LOW);
-//    }
   } else {
       doorInMotion = false;
       digitalWrite(ledPin, LOW);
@@ -152,25 +144,28 @@ void setup()
   digitalWrite(ledPin, LOW);
 }
 
+bool moveOnPress(int pin, bool directionUp) {
+  
+  if (digitalRead(pin) == LOW) {
+    digitalClockDisplay();
+    Serial.println(directionUp ? "Opening door" : "Closing door");
+    startDoorMove(directionUp);
+    Alarm.delay(500); // debounce
+    return true;
+  }
+  return false;
+}
+
 void loop()
 {
-  // check if the pushbutton is pressed. If it is, the buttonState is LOW:
-  if (digitalRead(upButtonPin) == LOW) {
-    digitalClockDisplay();
-    Serial.println("Opening door");
-    startDoorMove(true);
-    Alarm.delay(500); // debounce
+  if (moveOnPress(upButtonPin, true)) {
     return;
   }
   
-  if (digitalRead(downButtonPin) == LOW) {
-    digitalClockDisplay();
-    Serial.println("Closing door");
-    startDoorMove(false);
-    Alarm.delay(500); // debounce
+  if (moveOnPress(downButtonPin, false)) {
     return;
   }
-
+  
   if (digitalRead(timerButtonPin) == LOW) {
     // switch to timer mode
     digitalClockDisplay();
