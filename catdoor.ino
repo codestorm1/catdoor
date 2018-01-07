@@ -37,7 +37,8 @@ int stepsPerLoop = stepsToOpen / 100;
 int openDoorPosition = 0;
 int closedDoorPosition = stepsToOpen;
 
-int doorPosition = 0; // initialize as though door is down
+//int doorPosition = 0; // initialize as though door is up
+int doorPosition = stepsToOpen; // initialize as though door is down
 
 bool doorInMotion = false;
 bool doorDirectionOpen = false;
@@ -83,7 +84,7 @@ void startDoorMove(bool open) {
   doorDirectionOpen = open;
 }
 
-void MorningOpen() {
+void morningOpen() {
   Serial.println("Open sez me");
   if (timerMode) {
     Serial.println("Time to open door");
@@ -91,7 +92,7 @@ void MorningOpen() {
   }
 }
 
-void EveningClose() {
+void eveningClose() {
   Serial.println("Close sez me");
   if (timerMode) {
     Serial.println("Time to close door");
@@ -130,17 +131,22 @@ void setup()
     // This line sets the RTC with an explicit date & time, for example to set
     // January 21, 2014 at 3am you would call:
     
+  } else {
+    DateTime now = rtc.now();
+    setTime(now.unixtime());
   }
-  DateTime now = rtc.now();
-  setTime(now.unixtime()); 
+  Serial.println(now());
   motor.setSpeed(60);
   digitalClockDisplay();
-  
-//  Alarm.alarmRepeat(7, 0, 0, MorningOpen);  // 7am every day
-//  Alarm.alarmRepeat(20, 0, 0, EveningClose );  // 8pm every night
- rtc.adjust(DateTime(2017, 1, 6, 0, 0, 0));
-  Alarm.alarmRepeat(0, 0, 20, MorningOpen);
-  Alarm.alarmRepeat(0, 1, 0, EveningClose );
+setTime(1,53,0,1,1,17);
+//setTime(0,0,0,1,1,17);
+  Alarm.alarmRepeat(7, 0, 0, morningOpen);  // 7am every day
+  Alarm.alarmRepeat(20, 0, 0, eveningClose );  // 8pm every night
+ //rtc.adjust(DateTime(2017, 1, 6, 0, 0, 0));
+  Serial.println("Setting alarms");
+//  Alarm.alarmRepeat(0, 0, 20, morningOpen);
+//  Alarm.alarmRepeat(0, 1, 0, eveningClose);
+//  Alarm.timerRepeat(5, eveningClose);
   digitalWrite(ledPin, LOW);
 }
 
@@ -181,6 +187,7 @@ void loop()
     Serial.println("Moving door a bit");
     moveDoor();
   }
-  Alarm.delay(1);
+  //Serial.println(now());
+  Alarm.delay(0);
 }
 
