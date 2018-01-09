@@ -15,10 +15,20 @@
 
 RTC_DS1307 rtc;
 
+#define NANO
+
+#ifdef NANO
+int in1Pin = 12;
+int in2Pin = 11;
+int in3Pin = 10;
+int in4Pin = 9;
+#else 
 int in1Pin = 13;
 int in2Pin = 12;
 int in3Pin = 11;
 int in4Pin = 10;
+#endif
+
 int ledPin = 13;
 
 Stepper motor(512, in1Pin, in3Pin, in2Pin, in4Pin);  
@@ -26,7 +36,11 @@ int previous = 0;
 
 const int upButtonPin = 3; // button to open door, disables timer mode
 const int timerButtonPin = 4; // button to turn on timer mode
-const int downButtonPin = 5; // button to close door, also disables timer mode
+#ifdef NANO
+const int downButtonPin = 6; // nano down button to close door, also disables timer mode
+#else
+const int downButtonPin = 5; // mini pro down button
+#endif
 
 bool timerMode = true;
 
@@ -98,7 +112,7 @@ void eveningClose() {
     Serial.println("Time to close door");
     startDoorMove(false);
   }
-}  
+}
 
 void setup()
 {
@@ -130,20 +144,21 @@ void setup()
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     // This line sets the RTC with an explicit date & time, for example to set
     // January 21, 2014 at 3am you would call:
-    
   } else {
+    Serial.println("RTC is running");
     DateTime now = rtc.now();
     setTime(now.unixtime());
   }
-  Serial.println(now());
+  
   motor.setSpeed(60);
   digitalClockDisplay();
-setTime(1,53,0,1,1,17);
+//setTime(1,53,0,1,1,17);
 //setTime(0,0,0,1,1,17);
+//  setTime(21,5,0,1,1,17);
+  Serial.println("Setting alarms");
   Alarm.alarmRepeat(7, 0, 0, morningOpen);  // 7am every day
   Alarm.alarmRepeat(20, 0, 0, eveningClose );  // 8pm every night
  //rtc.adjust(DateTime(2017, 1, 6, 0, 0, 0));
-  Serial.println("Setting alarms");
 //  Alarm.alarmRepeat(0, 0, 20, morningOpen);
 //  Alarm.alarmRepeat(0, 1, 0, eveningClose);
 //  Alarm.timerRepeat(5, eveningClose);
@@ -151,7 +166,6 @@ setTime(1,53,0,1,1,17);
 }
 
 bool moveOnPress(int pin, bool directionUp) {
-  
   if (digitalRead(pin) == LOW) {
     digitalClockDisplay();
     Serial.println(directionUp ? "Opening door" : "Closing door");
