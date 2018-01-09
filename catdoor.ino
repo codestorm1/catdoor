@@ -16,6 +16,7 @@
 RTC_DS1307 rtc;
 
 #define NANO
+//#define FORCE_TIME_UPDATE
 
 #ifdef NANO
 int in1Pin = 12;
@@ -73,33 +74,32 @@ void printDigits(int digits) {
 }
 
 void moveDoor() {
-  Serial.println("in Move door");
-    Serial.println(doorDirectionOpen);
-    Serial.println(doorPosition);
-    Serial.println(openDoorPosition);
-    Serial.println(closedDoorPosition);
   if (doorDirectionOpen && (doorPosition > openDoorPosition)) {
-    Serial.println("Move door open");
     motor.step(stepsPerLoop);
     doorPosition += stepsPerLoop * -1;
   } else if (!doorDirectionOpen && doorPosition < closedDoorPosition) {
-    Serial.println("Move door closed");
     motor.step(stepsPerLoop * -1);
     doorPosition += stepsPerLoop;
   } else {
-      doorInMotion = false;
-      digitalWrite(ledPin, LOW);
+    digitalClockDisplay();
+    Serial.print("Door ");
+    Serial.println(doorDirectionOpen ? "opened" : "closed");
+    doorInMotion = false;
+    digitalWrite(ledPin, LOW);
   }
 }
 
 void startDoorMove(bool open) {
+  digitalClockDisplay();
+  Serial.print("Door ");
+  Serial.println(open ? "opening" : "closing");
   doorInMotion = true;
   digitalWrite(ledPin, HIGH);
   doorDirectionOpen = open;
 }
 
 void morningOpen() {
-  Serial.println("Open sez me");
+  Serial.println("Timer open start");
   if (timerMode) {
     Serial.println("Time to open door");
     startDoorMove(true);
@@ -107,7 +107,7 @@ void morningOpen() {
 }
 
 void eveningClose() {
-  Serial.println("Close sez me");
+  Serial.println("Timer close start");
   if (timerMode) {
     Serial.println("Time to close door");
     startDoorMove(false);
@@ -136,7 +136,10 @@ void setup()
     Serial.println("Couldn't find RTC");
     while (1);
   }
-// rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  
+  #ifdef FORCE_TIME_UPDATE
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // set clock to time of last compilation
+  #endif
 
   if (!rtc.isrunning()) {
     Serial.println("RTC is NOT running!");
@@ -144,24 +147,22 @@ void setup()
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     // This line sets the RTC with an explicit date & time, for example to set
     // January 21, 2014 at 3am you would call:
+    //rtc.adjust(DateTime(2017, 1, 6, 0, 0, 0));
   } else {
     Serial.println("RTC is running");
-    DateTime now = rtc.now();
-    setTime(now.unixtime());
   }
   
+  setTime(rtc.now().unixtime());
   motor.setSpeed(60);
   digitalClockDisplay();
 //setTime(1,53,0,1,1,17);
-//setTime(0,0,0,1,1,17);
-//  setTime(21,5,0,1,1,17);
+
   Serial.println("Setting alarms");
-  Alarm.alarmRepeat(7, 0, 0, morningOpen);  // 7am every day
-  Alarm.alarmRepeat(20, 0, 0, eveningClose );  // 8pm every night
- //rtc.adjust(DateTime(2017, 1, 6, 0, 0, 0));
-//  Alarm.alarmRepeat(0, 0, 20, morningOpen);
-//  Alarm.alarmRepeat(0, 1, 0, eveningClose);
-//  Alarm.timerRepeat(5, eveningClose);
+//  Alarm.alarmRepeat(21, 55, 0, morningOpen);  // 7am every day
+//  Alarm.alarmRepeat(21, 56, 0, eveningClose);  // 8pm every night
+  
+  Alarm.alarmRepeat(6, 0, 0, morningOpen);
+  Alarm.alarmRepeat(20, 0, 0, eveningClose);
   digitalWrite(ledPin, LOW);
 }
 
@@ -189,7 +190,7 @@ void loop()
   if (digitalRead(timerButtonPin) == LOW) {
     // switch to timer mode
     digitalClockDisplay();
-    Serial.println("Timer mode enabled");
+    Serial.println("Door motion stopped");
     timerMode = true;
     doorInMotion = false;
     digitalWrite(ledPin, LOW);
@@ -198,10 +199,8 @@ void loop()
   }
 
   if (doorInMotion) {
-    Serial.println("Moving door a bit");
     moveDoor();
   }
   //Serial.println(now());
   Alarm.delay(0);
 }
-
