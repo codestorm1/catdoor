@@ -1,17 +1,18 @@
-
 /*
  * Catdoor Controller 
  * 
  * from: Adafruit Arduino - Lesson 16. Stepper
 */
 
+#include <DS1307RTC.h>
+#include "RTClib.h"
+#include <time.h>
 #include <Stepper.h>
 #include <TimeLib.h>
 #include <TimeAlarms.h>
 
 // Date and time functions using a DS1307 RTC connected via I2C and Wire lib
 #include <Wire.h>
-#include "RTClib.h"
 
 RTC_DS1307 rtc;
 
@@ -36,9 +37,9 @@ Stepper motor(512, in1Pin, in3Pin, in2Pin, in4Pin);
 int previous = 0;
 
 const int upButtonPin = 3; // button to open door, disables timer mode
-const int timerButtonPin = 4; // button to turn on timer mode
+const int timerButtonPin = 6; // button to turn on timer mode
 #ifdef NANO
-const int downButtonPin = 6; // nano down button to close door, also disables timer mode
+const int downButtonPin = 4; // nano down button to close door, also disables timer mode
 #else
 const int downButtonPin = 5; // mini pro down button
 #endif
@@ -151,18 +152,24 @@ void setup()
   } else {
     Serial.println("RTC is running");
   }
+
+  setSyncProvider(RTC.get); // the function to get the time from the RTC
+  if(timeStatus() != timeSet) {
+    Serial.println("Time set failed");
+  }
   
-  setTime(rtc.now().unixtime());
+//  setTime(rtc.now().unixtime());
   motor.setSpeed(60);
+//  setTime(5, 59, 0, 1, 11, 17);
   digitalClockDisplay();
-//setTime(1,53,0,1,1,17);
 
   Serial.println("Setting alarms");
-//  Alarm.alarmRepeat(21, 55, 0, morningOpen);  // 7am every day
-//  Alarm.alarmRepeat(21, 56, 0, eveningClose);  // 8pm every night
+//  Alarm.alarmRepeat(0, 1, 0, morningOpen);
+//  Alarm.alarmRepeat(0, 3, 0, eveningClose);
   
   Alarm.alarmRepeat(6, 0, 0, morningOpen);
   Alarm.alarmRepeat(20, 0, 0, eveningClose);
+  Alarm.alarmRepeat(0, 30, 0, eveningClose);
   digitalWrite(ledPin, LOW);
 }
 
@@ -201,6 +208,7 @@ void loop()
   if (doorInMotion) {
     moveDoor();
   }
-  //Serial.println(now());
   Alarm.delay(0);
 }
+
+
