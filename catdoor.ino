@@ -3,7 +3,6 @@
 
    from: Adafruit Arduino - Lesson 16. Stepper
 */
-
 #include <DS1307RTC.h>
 #include "RTClib.h"
 #include <time.h>
@@ -188,6 +187,8 @@ void setup()
 
   Serial.println("Setting alarms");
 
+  Alarm.alarmRepeat(2, 45, 11, eveningClose);
+  Alarm.alarmRepeat(3, 45, 11, eveningClose);
   Alarm.alarmRepeat(5, 45, 11, morningOpen);
   Alarm.alarmRepeat(6, 0, 0, morningOpen);
   Alarm.alarmRepeat(20, 0, 0, eveningClose);
