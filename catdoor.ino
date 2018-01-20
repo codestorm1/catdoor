@@ -5,6 +5,7 @@
 */
 #include <DS1307RTC.h>
 #include "RTClib.h"
+#include <stdio.h>
 #include <time.h>
 #include <Stepper.h>
 #include <TimeLib.h>
@@ -17,7 +18,7 @@ RTC_DS1307 rtc;
 
 #define NANO // using different pinout for a nano board vs a pro mini
 //#define FORCE_TIME_UPDATE
-#define board_has_RTC
+#define BOARD_HAS_RTC
 
 #ifdef NANO
   int in1Pin = 12;
@@ -59,19 +60,40 @@ int doorPosition = stepsToOpen; // initialize as though door is closed
 bool doorInMotion = false;
 bool doorDirectionOpen = false;
 
-void digitalClockDisplay() {
-  // digital clock display of the time
-  Serial.print(hour());
-  printDigits(minute());
-  printDigits(second());
-  Serial.println();
-}
+
+AlarmID_t alarmIDs[6];
+int alarmCount = 0;
+
+int lastHourDumped = -1;
+int lastMinuteDumped = -1;
 
 void printDigits(int digits) {
   Serial.print(":");
   if (digits < 10)
     Serial.print('0');
   Serial.print(digits);
+}
+
+void digitalClockDisplay(time_t t) {
+  // digital clock display of the time
+  Serial.print(hour(t));
+  printDigits(minute(t));
+  printDigits(second(t));
+  Serial.println();
+}
+
+void digitalClockDisplay() {
+    return digitalClockDisplay(now());
+}
+
+void dumpAlarmValues() {
+  Serial.println("Current Alarms:");
+  for (int i = 0; i < alarmCount; i++) {
+    digitalClockDisplay(Alarm.read(alarmIDs[i]));
+  }
+  Serial.print("Next Alarm to trigger at: ");
+  digitalClockDisplay(Alarm.getNextTrigger());
+  Serial.println();
 }
 
 // trying to lower power use by disabling stepper between opening/closing
@@ -103,6 +125,7 @@ void moveDoor() {
     Serial.print("Door ");
     Serial.println(doorDirectionOpen ? "opened" : "closed");
     digitalWrite(ledPin, LOW);
+    dumpAlarmValues();
     disableStepper();
   }
 }
@@ -132,7 +155,6 @@ void eveningClose() {
   }
 }
 
-
 void setup()
 {
   pinMode(in1Pin, OUTPUT);
@@ -160,7 +182,7 @@ void setup()
   rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // set clock to time of last compilation
 #endif
 
-#ifdef board_has_RTC //real time clock installed
+#ifdef BOARD_HAS_RTC //real time clock installed
   if (!rtc.isrunning()) {
     Serial.println("RTC is NOT running!");
     // following line sets the RTC to the date & time this sketch was compiled
@@ -179,7 +201,7 @@ void setup()
   setTime(rtc.now().unixtime());
 #else /// no real time clock, set clock to last compile time
   // manually set the time
-  setTime(19, 50, 0, 1, 11, 17);
+  setTime(23, 50, 0, 1, 17, 18);
 #endif
 
   motor.setSpeed(60);
@@ -187,11 +209,19 @@ void setup()
 
   Serial.println("Setting alarms");
 
-  Alarm.alarmRepeat(2, 45, 11, eveningClose);
-  Alarm.alarmRepeat(3, 45, 11, eveningClose);
-  Alarm.alarmRepeat(5, 45, 11, morningOpen);
-  Alarm.alarmRepeat(6, 0, 0, morningOpen);
-  Alarm.alarmRepeat(20, 0, 0, eveningClose);
+  alarmIDs[alarmCount] = Alarm.alarmRepeat(13, 31, 0, morningOpen);
+  alarmCount += 1;
+  alarmIDs[alarmCount] = Alarm.alarmRepeat(15, 1, 0, morningOpen);
+  alarmCount += 1;
+  alarmIDs[alarmCount] = Alarm.alarmRepeat(17, 15, 0, morningOpen);
+  alarmCount += 1;
+  alarmIDs[alarmCount] = Alarm.alarmRepeat(6, 1, 0, morningOpen);
+  alarmCount += 1;
+  alarmIDs[alarmCount] = Alarm.alarmRepeat(20, 1, 0, eveningClose);
+  alarmCount += 1;
+  alarmIDs[alarmCount] = Alarm.alarmRepeat(23, 1, 0, eveningClose);
+  alarmCount += 1;
+  dumpAlarmValues();
   digitalWrite(ledPin, LOW);
 }
 
@@ -224,6 +254,16 @@ void loop()
   if (doorInMotion) {
     moveDoor();
   }
+
+  if (minute() % 15 == 0) {
+    if (lastHourDumped != hour() || lastMinuteDumped != minute()) {
+      lastHourDumped = hour();
+      lastMinuteDumped = minute();
+      digitalClockDisplay();
+      dumpAlarmValues();
+    }
+  }
+  
   Alarm.delay(0);
 }
 
