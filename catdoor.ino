@@ -209,17 +209,15 @@ void setup()
 
   Serial.println("Setting alarms");
 
-  alarmIDs[alarmCount] = Alarm.alarmRepeat(13, 31, 0, morningOpen);
+  alarmIDs[alarmCount] = Alarm.alarmRepeat(5, 46, 0, morningOpen); // open 5:46am
   alarmCount += 1;
-  alarmIDs[alarmCount] = Alarm.alarmRepeat(15, 1, 0, morningOpen);
+  alarmIDs[alarmCount] = Alarm.alarmRepeat(6, 1, 0, morningOpen); // open again at 6am (shouldn't need to happen)
   alarmCount += 1;
-  alarmIDs[alarmCount] = Alarm.alarmRepeat(17, 15, 0, morningOpen);
+  alarmIDs[alarmCount] = Alarm.alarmRepeat(22, 1, 0, eveningClose); // close at 10pm
   alarmCount += 1;
-  alarmIDs[alarmCount] = Alarm.alarmRepeat(6, 1, 0, morningOpen);
+  alarmIDs[alarmCount] = Alarm.alarmRepeat(23, 1, 0, eveningClose); // close again at 11pm in case door was manually opened
   alarmCount += 1;
-  alarmIDs[alarmCount] = Alarm.alarmRepeat(20, 1, 0, eveningClose);
-  alarmCount += 1;
-  alarmIDs[alarmCount] = Alarm.alarmRepeat(23, 1, 0, eveningClose);
+  alarmIDs[alarmCount] = Alarm.alarmRepeat(2, 1, 0, eveningClose); // close again at 2am
   alarmCount += 1;
   dumpAlarmValues();
   digitalWrite(ledPin, LOW);
